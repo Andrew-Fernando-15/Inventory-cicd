@@ -34,11 +34,17 @@ pipeline {
                         postgres:16-alpine
 
                     # Wait until the test database is ready to accept connections
-                    docker exec jenkins_test_db_${BUILD_NUMBER} sh -c 'until pg_isready -U test_user -d test_db; do sleep 1; done'
+                    for i in $(seq 1 15); do
+                        if docker exec jenkins_test_db_${BUILD_NUMBER} pg_isready -U test_user -d test_db; then
+                            break
+                        fi
+                        sleep 1
+                    done
 
-                    # Execute Django test suite in container attached to the test database
+                    # Execute Django test suite in container attached to test db and sharing workspace
                     docker run --rm --network container:jenkins_test_db_${BUILD_NUMBER} \
-                        -v "${WORKSPACE}:/app" -w /app \
+                        --volumes-from jenkins_server \
+                        -w "${WORKSPACE}" \
                         -e DB_ENGINE=django.db.backends.postgresql \
                         -e DB_NAME=test_db \
                         -e DB_USER=test_user \
