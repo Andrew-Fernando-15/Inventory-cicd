@@ -1,0 +1,20 @@
+services:
+  jenkins:
+    build:
+      context: ./jenkins-runner
+      dockerfile: Dockerfile
+    container_name: jenkins_server
+    user: "0:0"
+    ports:
+      - "8085:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home_data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+    restart: unless-stopped
+
+volumes:
+  jenkins_home_data:
+    name: jenkins_home_volume

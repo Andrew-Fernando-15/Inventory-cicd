@@ -14,9 +14,17 @@
         </div>
     </div>
 
-    <div style="margin: 1.5rem 0;">
-        <p style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Billed To</p>
-        <p style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-top: 0.25rem;">{{ invoice.customer_name }}</p>
+    <div style="margin: 1.5rem 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem;">
+        <div>
+            <p style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Billed To</p>
+            <p style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-top: 0.25rem;">{{ invoice.customer_name }}</p>
+        </div>
+        {% if invoice.notes %}
+        <div style="max-width: 350px; background: #F8FAFC; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem;">
+            <p style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.25rem;">Special Notes</p>
+            <p style="font-size: 0.875rem; color: var(--text-main); white-space: pre-line;">{{ invoice.notes }}</p>
+        </div>
+        {% endif %}
     </div>
 
     <div class="table-responsive">

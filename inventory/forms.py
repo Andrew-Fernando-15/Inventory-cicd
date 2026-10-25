@@ -33,10 +33,11 @@ class StockUpdateForm(forms.Form):
 class InvoiceForm(forms.ModelForm):
     class Meta:
         model = Invoice
-        fields = ['invoice_number', 'customer_name']
+        fields = ['invoice_number', 'customer_name', 'notes']
         widgets = {
             'invoice_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'INV-1001'}),
             'customer_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Customer or Business Name'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Optional customer notes or payment instructions...', 'rows': 2}),
         }
 
 

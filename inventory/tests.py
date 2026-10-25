@@ -94,8 +94,10 @@ class InvoiceTests(TestCase):
     def test_invoice_creation_and_stock_deduction(self):
         invoice = Invoice.objects.create(
             invoice_number="INV-TEST-01",
-            customer_name="Acme Corp"
+            customer_name="Acme Corp",
+            notes="Urgent shipping required"
         )
+        self.assertEqual(invoice.notes, "Urgent shipping required")
         item1 = InvoiceItem.objects.create(
             invoice=invoice,
             product=self.product1,
@@ -121,6 +123,7 @@ class InvoiceTests(TestCase):
         payload = {
             'invoice_number': 'INV-VIEW-01',
             'customer_name': 'Jane Doe',
+            'notes': 'Deliver to reception desk',
             'form-TOTAL_FORMS': '1',
             'form-INITIAL_FORMS': '0',
             'form-MIN_NUM_FORMS': '1',
@@ -134,6 +137,7 @@ class InvoiceTests(TestCase):
         # Check invoice created
         invoice = Invoice.objects.get(invoice_number='INV-VIEW-01')
         self.assertEqual(invoice.total_amount, Decimal('75.00'))
+        self.assertEqual(invoice.notes, 'Deliver to reception desk')
 
         # Check stock deducted: 10 - 3 = 7
         self.product1.refresh_from_db()

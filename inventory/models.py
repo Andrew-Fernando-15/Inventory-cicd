@@ -23,6 +23,7 @@ class Product(models.Model):
 class Invoice(models.Model):
     invoice_number = models.CharField(max_length=50, unique=True)
     customer_name = models.CharField(max_length=200)
+    notes = models.TextField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 
