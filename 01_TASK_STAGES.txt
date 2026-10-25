@@ -1,0 +1,223 @@
+=====================================================================
+FILE 1: TASK DESCRIPTION IN STAGES
+Project: End-to-End CI/CD Pipeline using Jenkins + Docker
+Application: Inventory and Billing System (Python Django + PostgreSQL + Nginx)
+=====================================================================
+
+GOAL
+----
+Automate build, test and deployment of the application so that a "git push"
+results in the new version going live with no manual steps.
+
+Problem being solved: manual deployment is slow, error-prone and gives
+inconsistent results between deployments.
+
+HOW TO USE THIS FILE
+--------------------
+- Work through the stages IN ORDER.
+- Do not start a stage until the previous stage's "DONE WHEN" checks pass.
+- After each stage, STOP and report: what was created, what was run, what
+  the output was. Wait for the user to confirm before continuing.
+- Read 02_PROJECT_CONTEXT_AND_RULES.txt before doing anything.
+
+
+---------------------------------------------------------------------
+STAGE 0: ENVIRONMENT CHECK (no code written yet)
+---------------------------------------------------------------------
+Purpose: Find out what actually exists on the machine. Do NOT assume.
+
+Tasks:
+  0.1  Run and report the output of:
+         docker --version
+         docker compose version
+         git --version
+         python --version
+  0.2  Report the operating system (Windows / Linux / macOS).
+  0.3  Ask the user: How will Jenkins be run? (Options to offer: Jenkins as
+       a Docker container, or Jenkins installed directly on the machine.)
+       Do not pick for the user.
+  0.4  Ask the user: Where will the Git repository live? (Local only,
+       GitHub, GitLab, other.) This decides how push triggers the pipeline.
+
+DONE WHEN: The user has confirmed all answers above.
+
+
+---------------------------------------------------------------------
+STAGE 1: DJANGO APPLICATION (the thing we deploy)
+---------------------------------------------------------------------
+Purpose: A small, working Inventory and Billing app.
+
+Required features (from the task):
+  - Product management (create / list / edit / delete products)
+  - Stock updates (increase / decrease stock of a product)
+  - Invoice generation (create an invoice made of product line items)
+
+Required technical items:
+  - Django project with an app for inventory/billing
+  - Models for Product, Invoice, and invoice line items
+  - A /health/ endpoint that returns HTTP 200 when the app is healthy
+  - Settings read database configuration from ENVIRONMENT VARIABLES
+    (needed so dev and prod can differ)
+  - requirements.txt listing every dependency (including gunicorn and the
+    PostgreSQL driver)
+  - Tests that run with:  python manage.py test
+    (at minimum: model tests, the /health/ test, one stock-update test,
+    one invoice test)
+
+DONE WHEN:
+  - The app runs locally and the user can see product/stock/invoice pages.
+  - python manage.py test passes.
+  - /health/ returns 200.
+
+
+---------------------------------------------------------------------
+STAGE 2: DOCKERIZE THE APPLICATION
+---------------------------------------------------------------------
+Purpose: Package the app as a container.
+
+Tasks:
+  2.1  Dockerfile for Django, running with GUNICORN (not the Django
+       development server).
+  2.2  .dockerignore file.
+  2.3  Nginx configuration file that acts as a reverse proxy to the
+       Django/Gunicorn container.
+  2.4  Nginx image/Dockerfile (or the official Nginx image with the
+       config mounted/copied - state which one is used and why).
+  2.5  Decide how static files are served and state the decision clearly.
+
+DONE WHEN:
+  - The Django image builds with "docker build".
+  - Nginx config passes a syntax check.
+
+
+---------------------------------------------------------------------
+STAGE 3: DOCKER COMPOSE (dev and prod)
+---------------------------------------------------------------------
+Purpose: Run all services together. Exactly THREE services:
+  1. web    - Django + Gunicorn
+  2. db     - PostgreSQL
+  3. nginx  - reverse proxy
+
+Tasks:
+  3.1  docker-compose.dev.yml
+  3.2  docker-compose.prod.yml
+  3.3  Environment variable files (e.g. .env.dev, .env.prod) with
+       PLACEHOLDER values only - no real secrets committed to Git.
+  3.4  A named volume for PostgreSQL data so data survives restarts.
+  3.5  Clearly document every difference between the dev and prod files
+       (e.g. debug setting, ports, restart policy, env file).
+
+DONE WHEN:
+  - "docker compose -f <file> up -d" starts all three services for both dev
+    and prod files.
+  - The app is reachable through Nginx in the browser.
+
+
+---------------------------------------------------------------------
+STAGE 4: POST-DEPLOY STEPS
+---------------------------------------------------------------------
+Purpose: After containers start, make the deployment safe and verified.
+
+Tasks:
+  4.1  Run migrations inside the web container:
+         python manage.py migrate
+  4.2  Health check on /health/ (retry for a limited time while the app
+       starts; FAIL the pipeline if it never returns 200).
+  4.3  Put these steps in a script (e.g. deploy.sh) so Jenkins calls one
+       thing.
+
+DONE WHEN:
+  - Running the script on a fresh stack results in migrated DB and a
+    passing health check.
+
+
+---------------------------------------------------------------------
+STAGE 5: JENKINS SETUP
+---------------------------------------------------------------------
+Purpose: Get Jenkins running and able to use Docker.
+
+Tasks:
+  5.1  Install/run Jenkins using the method the user chose in Stage 0.
+  5.2  Make sure Jenkins can run docker and docker compose commands.
+       (Explain exactly how access is given and any security trade-off.)
+  5.3  Install only the Jenkins plugins that are actually required and
+       list each one with the reason.
+  5.4  Connect Jenkins to the Git repository (method depends on Stage 0).
+
+DONE WHEN:
+  - A trivial Jenkins job can run "docker ps" successfully.
+
+
+---------------------------------------------------------------------
+STAGE 6: JENKINSFILE (the pipeline)
+---------------------------------------------------------------------
+Purpose: Define the pipeline as code, stored in the repo.
+
+Pipeline stages, in order:
+  1. Checkout        - pull the code
+  2. Test            - run python manage.py test against a TEST database
+  3. Build           - build the Django (Gunicorn) image and the Nginx image
+  4. Deploy          - docker compose up -d using the chosen compose file
+  5. Post-deploy     - migrate inside the container, then /health/ check
+
+Required:
+  - A PARAMETER (e.g. ENVIRONMENT = dev | prod) that selects which compose
+    file is used.
+  - Pipeline fails immediately if Test, Build or the health check fails.
+  - Deployment must NOT happen if tests fail.
+
+DONE WHEN:
+  - A manual "Build with Parameters" run completes all stages green for dev.
+  - A deliberately broken test makes the pipeline stop before Deploy.
+
+
+---------------------------------------------------------------------
+STAGE 7: AUTOMATIC TRIGGER
+---------------------------------------------------------------------
+Purpose: "git push" starts the pipeline by itself.
+
+Tasks:
+  7.1  Configure the trigger. The method depends on where Jenkins and the
+       repo run (webhook vs polling). Explain the choice honestly,
+       including limitations (e.g. a webhook cannot reach a Jenkins on a
+       private laptop without extra tooling).
+  7.2  Test: push a trivial change and confirm a build starts on its own.
+
+DONE WHEN:
+  - A push causes a Jenkins build without clicking anything.
+
+
+---------------------------------------------------------------------
+STAGE 8: FINAL DEMO
+---------------------------------------------------------------------
+Demo scenario (from the task):
+  1. Add a NEW FIELD to the Invoice model (for example a notes field -
+     ask the user which field they want).
+  2. Create the Django migration file for it.
+  3. Commit and push.
+  4. Show Jenkins automatically: tests -> build -> deploy -> migrate ->
+     health check.
+  5. Show the new field working in the live app.
+
+DONE WHEN:
+  - The new field is visible in the running application with no manual
+    deployment commands.
+
+
+---------------------------------------------------------------------
+STAGE 9: DOCUMENTATION FOR SUBMISSION / EXPLANATION
+---------------------------------------------------------------------
+Tasks:
+  9.1  README.md: project overview, architecture, how to run, how the
+       pipeline works.
+  9.2  A simple architecture diagram (text or image) showing:
+       Developer -> Git -> Jenkins -> Docker -> web / db / nginx.
+  9.3  Short notes the user can use to EXPLAIN each stage in a viva/demo.
+  9.4  List of known limitations and possible improvements.
+
+DONE WHEN: The user can explain every file and every pipeline stage.
+
+
+=====================================================================
+END OF FILE 1
+=====================================================================

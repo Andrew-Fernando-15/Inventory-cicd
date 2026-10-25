@@ -1,0 +1,183 @@
+=====================================================================
+FILE 2: PROJECT CONTEXT AND STRICT RULES FOR THE AI
+Project: End-to-End CI/CD Pipeline using Jenkins + Docker
+=====================================================================
+
+READ THIS FILE COMPLETELY BEFORE DOING ANY WORK.
+The task stages are in 01_TASK_STAGES.txt.
+
+
+=====================================================================
+PART A: WHAT THE PROJECT IS
+=====================================================================
+
+PURPOSE
+-------
+A development team wants to automate build, test and deployment of an
+application using Jenkins and Docker. Manual deployment is time-consuming
+and prone to errors. This project builds an end-to-end CI/CD pipeline for
+faster, reliable, automated deployment.
+
+THE APPLICATION
+---------------
+Name: Inventory and Billing System
+What it is: A small shop's stock tracker.
+Features: product management, stock updates, invoice generation.
+Tech stack: Python Django + PostgreSQL + Nginx.
+
+WHY THIS APPLICATION WAS CHOSEN
+-------------------------------
+It has multiple services, so it demonstrates a realistic production-style
+deployment rather than a single container.
+
+PIPELINE SPECIFICS (fixed by the task - do not change)
+------------------------------------------------------
+  Test:         python manage.py test  (or pytest-django) against a test
+                database
+  Build:        Django image run with Gunicorn, plus an Nginx image as the
+                reverse proxy
+  Deploy:       docker compose up -d with exactly three services:
+                web, db, nginx
+  Post-deploy:  run "python manage.py migrate" inside the container, then
+                a health check on /health/
+  Environments: parameterized build to pick dev or prod compose files
+
+DEMO (fixed by the task)
+------------------------
+Add a new field to the Invoice model, push, and show the migration and the
+new feature going live automatically.
+
+TOOLS
+-----
+  Jenkins        - CI/CD server running the pipeline
+  Docker         - containers
+  Docker Compose - multi-service deployment
+  Git            - version control and trigger source
+  Gunicorn       - WSGI server for Django
+  Nginx          - reverse proxy
+  PostgreSQL     - database
+
+
+=====================================================================
+PART B: FACTS ABOUT THE USER AND THEIR MACHINE
+=====================================================================
+
+KNOWN (stated by the user):
+  - Docker is installed.
+  - Git is installed.
+  - The user is a student/learner who must IMPLEMENT and EXPLAIN this
+    project themselves, so every step must be understandable.
+
+UNKNOWN (DO NOT ASSUME - ASK OR CHECK):
+  - Operating system
+  - Docker / Docker Compose / Python versions
+  - Whether Python is installed locally
+  - How Jenkins will be installed or run
+  - Where the Git repository is hosted (local, GitHub, GitLab, ...)
+  - Whether the machine is reachable from the internet (affects webhooks)
+  - Which exact new Invoice field to add for the demo
+  - Any database name, username, password or port preferences
+
+If something is in the UNKNOWN list, you MUST ask the user or check it
+with a command. You must never silently pick an answer.
+
+
+=====================================================================
+PART C: ANTI-HALLUCINATION RULES (MANDATORY)
+=====================================================================
+
+RULE 1 - NO ASSUMPTIONS
+  Never assume versions, file paths, operating system, ports, usernames,
+  passwords, or installed software. Check with a command or ask.
+
+RULE 2 - VERIFY BEFORE CLAIMING
+  Do not say something "works", "passes" or "is installed" unless you
+  actually ran a command and saw the output. Show the real output.
+
+RULE 3 - NO INVENTED THINGS
+  Do not invent: package names, Jenkins plugin names, Docker image tags,
+  command-line flags, Django settings, or file contents you are not sure
+  about. If unsure, say "I am not sure" and verify (run --help, read the
+  official docs, or ask the user).
+
+RULE 4 - STAY INSIDE THE SCOPE
+  Do only what the stages in 01_TASK_STAGES.txt describe. Do not add
+  extra features, extra services, extra tools (for example Kubernetes,
+  Redis, Celery, Terraform, cloud providers) unless the user asks.
+  The deployment has exactly three services: web, db, nginx.
+
+RULE 5 - ONE STAGE AT A TIME
+  Finish a stage, report results, and WAIT for the user's confirmation
+  before starting the next stage.
+
+RULE 6 - NEVER FAKE SUCCESS
+  If a command fails, show the full error and explain it. Do not hide
+  errors, skip failing tests, delete tests to make them pass, or edit
+  expected results to force a green pipeline.
+
+RULE 7 - SECRETS
+  Never hard-code real passwords or secrets in committed files. Use
+  environment variables and placeholder values, and tell the user which
+  placeholders to replace.
+
+RULE 8 - EXPLAIN WHAT YOU DO
+  For every file you create, give a short plain-language explanation of
+  what it is and why it exists. The user must be able to explain it later.
+
+RULE 9 - ASK WHEN A CHOICE EXISTS
+  If there is more than one reasonable approach (for example Jenkins in
+  Docker vs installed on the machine, webhook vs polling), present the
+  options with trade-offs and let the user choose.
+
+RULE 10 - BE HONEST ABOUT LIMITS
+  If something cannot be done in the user's setup (for example a GitHub
+  webhook reaching a Jenkins on a private network), say so clearly and
+  offer real alternatives. Do not pretend it will work.
+
+RULE 11 - DO NOT DESTROY USER DATA
+  Do not delete files, containers, volumes or images that you did not
+  create in this project. Ask first before any destructive command
+  (for example docker system prune, docker volume rm, git reset --hard).
+
+RULE 12 - CHANGE REQUESTS
+  Do not change the fixed pipeline specifics in Part A. If you think a
+  change is needed, explain why and ask for approval first.
+
+
+=====================================================================
+PART D: REPORTING FORMAT AFTER EACH STAGE
+=====================================================================
+
+At the end of every stage, report using this structure:
+
+  STAGE:           <number and name>
+  FILES CREATED:   <list with one-line purpose each>
+  COMMANDS RUN:    <exact commands>
+  REAL OUTPUT:     <actual output, trimmed only if very long>
+  RESULT:          PASS / FAIL (with reason)
+  OPEN QUESTIONS:  <anything you need from the user>
+  NEXT STAGE:      <what comes next - wait for approval>
+
+
+=====================================================================
+PART E: DEFINITION OF "FINISHED"
+=====================================================================
+
+The project is finished only when ALL of these are true and demonstrated
+with real output:
+  [ ] The Django app has product, stock and invoice features.
+  [ ] python manage.py test passes.
+  [ ] The Django image (Gunicorn) and the Nginx image build.
+  [ ] docker compose up -d starts web, db and nginx (dev and prod files).
+  [ ] migrate runs inside the container after deploy.
+  [ ] /health/ returns 200 and the pipeline checks it.
+  [ ] Jenkinsfile runs Test -> Build -> Deploy -> Post-deploy.
+  [ ] The environment (dev/prod) is selectable by a build parameter.
+  [ ] A git push starts the pipeline automatically.
+  [ ] The Invoice-model-field demo works end to end.
+  [ ] README and explanation notes exist and the user understands them.
+
+
+=====================================================================
+END OF FILE 2
+=====================================================================

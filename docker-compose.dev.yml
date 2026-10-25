@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: inventory_dev_db
+    env_file:
+      - .env.dev
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inventory_dev_web
+    env_file:
+      - .env.dev
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - static_volume_dev:/app/staticfiles
+    restart: unless-stopped
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: inventory_dev_nginx
+    depends_on:
+      - web
+    ports:
+      - "8080:80"
+    volumes:
+      - static_volume_dev:/app/staticfiles:ro
+    restart: unless-stopped
+
+volumes:
+  postgres_dev_data:
+    name: inventory_postgres_dev_data
+  static_volume_dev:
+    name: inventory_static_dev_volume

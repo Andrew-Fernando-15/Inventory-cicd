@@ -1,0 +1,100 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Products and Stock - Inventory{% endblock %}
+
+{% block content %}
+<div class="summary-grid">
+    <div class="summary-card card-primary">
+        <div class="summary-label">Total Products</div>
+        <div class="summary-value" id="summary-total">{{ products|length }}</div>
+    </div>
+    <div class="summary-card card-warning">
+        <div class="summary-label">Low Stock (10 or fewer)</div>
+        <div class="summary-value" id="summary-low">0</div>
+    </div>
+    <div class="summary-card card-danger">
+        <div class="summary-label">Out of Stock</div>
+        <div class="summary-value" id="summary-out">0</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h1 class="card-title">Inventory Products</h1>
+            <p class="card-subtitle">Manage catalog items and current warehouse stock levels</p>
+        </div>
+        <div>
+            <a href="{% url 'product_create' %}" class="btn btn-success">+ Add Product</a>
+        </div>
+    </div>
+
+    {% if products %}
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Product Name</th>
+                    <th>Unit Price</th>
+                    <th>Stock Level</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr data-stock="{{ product.stock_quantity }}">
+                    <td><code>{{ product.sku }}</code></td>
+                    <td><strong>{{ product.name }}</strong></td>
+                    <td>${{ product.price }}</td>
+                    <td><strong>{{ product.stock_quantity }}</strong> units</td>
+                    <td>
+                        {% if product.stock_quantity > 10 %}
+                            <span class="badge badge-success">In Stock</span>
+                        {% elif product.stock_quantity > 0 %}
+                            <span class="badge badge-warning">Low Stock</span>
+                        {% else %}
+                            <span class="badge badge-danger">Out of Stock</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <a href="{% url 'stock_update' product.pk %}" class="btn btn-primary btn-sm">Adjust Stock</a>
+                        <a href="{% url 'product_edit' product.pk %}" class="btn btn-outline btn-sm">Edit</a>
+                        <a href="{% url 'product_delete' product.pk %}" class="btn btn-danger btn-sm">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h2 class="empty-state-title">No products found in inventory</h2>
+        <p class="empty-state-text">Your product catalog is currently empty. Add your first item to begin tracking warehouse stock levels and generating invoices.</p>
+        <a href="{% url 'product_create' %}" class="btn btn-success">Add First Product</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var lowCount = 0;
+        var outCount = 0;
+        var rows = document.querySelectorAll('tr[data-stock]');
+        rows.forEach(function(row) {
+            var stock = parseInt(row.getAttribute('data-stock'), 10);
+            if (isNaN(stock)) return;
+            if (stock === 0) {
+                outCount++;
+            } else if (stock <= 10) {
+                lowCount++;
+            }
+        });
+        var lowElem = document.getElementById('summary-low');
+        var outElem = document.getElementById('summary-out');
+        if (lowElem) lowElem.textContent = lowCount;
+        if (outElem) outElem.textContent = outCount;
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Invoice {{ invoice.invoice_number }} - Billing{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header" style="border-bottom: 2px solid var(--border); padding-bottom: 1rem;">
+        <div>
+            <h1 class="card-title">Invoice #{{ invoice.invoice_number }}</h1>
+            <p class="card-subtitle">Issued on {{ invoice.created_at|date:"F d, Y - H:i" }}</p>
+        </div>
+        <div style="text-align: right;">
+            <span class="badge badge-success">Recorded</span>
+        </div>
+    </div>
+
+    <div style="margin: 1.5rem 0;">
+        <p style="color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Billed To</p>
+        <p style="font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-top: 0.25rem;">{{ invoice.customer_name }}</p>
+    </div>
+
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Product Description</th>
+                    <th style="text-align: center;">Qty</th>
+                    <th style="text-align: right;">Unit Price</th>
+                    <th style="text-align: right;">Line Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice.items.all %}
+                <tr>
+                    <td>
+                        <strong>{{ item.product.name }}</strong><br>
+                        <small style="color: var(--text-muted);">SKU: {{ item.product.sku }}</small>
+                    </td>
+                    <td style="text-align: center;">{{ item.quantity }}</td>
+                    <td style="text-align: right;">${{ item.unit_price }}</td>
+                    <td style="text-align: right;"><strong>${{ item.line_total }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" style="text-align: right; font-weight: 700; font-size: 1.05rem; padding-top: 1.5rem;">
+                        Grand Total:
+                    </td>
+                    <td style="text-align: right; font-weight: 700; font-size: 1.25rem; color: var(--primary); padding-top: 1.5rem;">
+                        ${{ invoice.total_amount }}
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center;">
+        <a href="{% url 'invoice_list' %}" class="btn btn-secondary">Back to Invoices</a>
+        <button onclick="window.print()" class="btn btn-primary">Print Invoice</button>
+    </div>
+</div>
+{% endblock %}

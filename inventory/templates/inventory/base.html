@@ -1,0 +1,35 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Inventory and Billing System{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'inventory/style.css' %}">
+</head>
+<body>
+    <header>
+        <div class="brand-section">
+            <a href="{% url 'product_list' %}" class="logo">StockFlow CI/CD</a>
+            <a href="/health/" target="_blank" class="health-link" title="System Health Status">
+                <span class="health-status-dot"></span>
+                <span>/health/</span>
+            </a>
+        </div>
+        <nav>
+            <a href="{% url 'product_list' %}" class="nav-link {% if request.resolver_match.url_name == 'product_list' or request.resolver_match.url_name == 'product_create' or request.resolver_match.url_name == 'product_edit' or request.resolver_match.url_name == 'stock_update' or request.resolver_match.url_name == 'product_delete' %}active{% endif %}">Products</a>
+            <a href="{% url 'invoice_list' %}" class="nav-link {% if request.resolver_match.url_name == 'invoice_list' or request.resolver_match.url_name == 'invoice_detail' %}active{% endif %}">Invoices</a>
+            <a href="{% url 'invoice_create' %}" class="btn btn-primary btn-sm">+ New Invoice</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

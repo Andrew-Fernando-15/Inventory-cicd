@@ -1,0 +1,67 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Create Invoice - Billing{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        <div>
+            <h1 class="card-title">Generate Invoice</h1>
+            <p class="card-subtitle">Create customer invoice and automatically deduct stock</p>
+        </div>
+    </div>
+
+    <form method="post" id="invoice-form">
+        {% csrf_token %}
+
+        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; margin-bottom: 1.5rem;">
+            <div class="form-group">
+                <label for="{{ invoice_form.invoice_number.id_for_label }}">Invoice Number</label>
+                {{ invoice_form.invoice_number }}
+                {% if invoice_form.invoice_number.errors %}
+                    <span class="form-error">{{ invoice_form.invoice_number.errors.0 }}</span>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label for="{{ invoice_form.customer_name.id_for_label }}">Customer or Business Name</label>
+                {{ invoice_form.customer_name }}
+                {% if invoice_form.customer_name.errors %}
+                    <span class="form-error">{{ invoice_form.customer_name.errors.0 }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <h2 style="margin-bottom: 1rem; font-size: 1.05rem; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; color: var(--text-main);">
+            Line Items
+        </h2>
+
+        {{ item_formset.management_form }}
+
+        <div id="item-rows">
+            {% for form in item_formset %}
+            <div class="form-grid" style="display: grid; grid-template-columns: 3fr 1fr; gap: 1rem; margin-bottom: 1rem; align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Product</label>
+                    {{ form.product }}
+                    {% if form.product.errors %}
+                        <span class="form-error">{{ form.product.errors.0 }}</span>
+                    {% endif %}
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Quantity</label>
+                    {{ form.quantity }}
+                    {% if form.quantity.errors %}
+                        <span class="form-error">{{ form.quantity.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 2rem; display: flex; gap: 0.75rem;">
+            <button type="submit" class="btn btn-primary">Generate and Finalize Invoice</button>
+            <a href="{% url 'invoice_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

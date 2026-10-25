@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: inventory_prod_db
+    env_file:
+      - .env.prod
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    restart: always
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inventory_prod_web
+    env_file:
+      - .env.prod
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - static_volume_prod:/app/staticfiles
+    restart: always
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: inventory_prod_nginx
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+    volumes:
+      - static_volume_prod:/app/staticfiles:ro
+    restart: always
+
+volumes:
+  postgres_prod_data:
+    name: inventory_postgres_prod_data
+  static_volume_prod:
+    name: inventory_static_prod_volume

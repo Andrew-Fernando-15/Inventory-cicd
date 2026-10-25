@@ -1,0 +1,20 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Delete Product - Inventory{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 0 auto; text-align: center;">
+    <h1 class="card-title" style="color: var(--danger); margin-bottom: 1rem;">Confirm Product Deletion</h1>
+    <p style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 0.95rem;">
+        Are you sure you want to permanently delete <strong>{{ product.name }}</strong> (SKU: <code>{{ product.sku }}</code>)? This action cannot be undone.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div style="display: flex; justify-content: center; gap: 1rem;">
+            <button type="submit" class="btn btn-danger">Delete Product</button>
+            <a href="{% url 'product_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

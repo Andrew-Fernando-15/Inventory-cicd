@@ -1,0 +1,16 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+*.sqlite3-journal
+.git/
+.gitignore
+.dockerignore
+.idea/
+.vscode/
+*.log
+Dockerfile*
+docker-compose*.yml
+nginx/

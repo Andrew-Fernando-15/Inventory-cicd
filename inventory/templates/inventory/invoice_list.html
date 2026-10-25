@@ -1,0 +1,54 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Invoices - Billing{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h1 class="card-title">Invoices and Billing</h1>
+            <p class="card-subtitle">View customer bills, item breakdowns, and issued invoices</p>
+        </div>
+        <div>
+            <a href="{% url 'invoice_create' %}" class="btn btn-primary">+ Create New Invoice</a>
+        </div>
+    </div>
+
+    {% if invoices %}
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Invoice Number</th>
+                    <th>Customer Name</th>
+                    <th>Date Issued</th>
+                    <th>Status</th>
+                    <th>Total Amount</th>
+                    <th style="text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in invoices %}
+                <tr>
+                    <td><strong><code>{{ invoice.invoice_number }}</code></strong></td>
+                    <td>{{ invoice.customer_name }}</td>
+                    <td>{{ invoice.created_at|date:"Y-m-d H:i" }}</td>
+                    <td><span class="badge badge-success">Recorded</span></td>
+                    <td><strong>${{ invoice.total_amount }}</strong></td>
+                    <td style="text-align: right;">
+                        <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-outline btn-sm">View Details</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h2 class="empty-state-title">No invoices generated yet</h2>
+        <p class="empty-state-text">There are no billing records in the system. Generate an invoice to bill customer line items and deduct inventory stock.</p>
+        <a href="{% url 'invoice_create' %}" class="btn btn-primary">Generate First Invoice</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
