@@ -1,0 +1,151 @@
+=====================================================================
+TOMORROW PRESENTATION CHEAT SHEET: EXACT COMMANDS & DEMO STEPS
+=====================================================================
+
+Follow these steps tomorrow when presenting to your teacher or examiner.
+
+---------------------------------------------------------------------
+STEP 0: BEFORE OPENING TERMINAL
+---------------------------------------------------------------------
+1. Turn on Docker Desktop on your laptop and wait until the icon
+   in the taskbar turns solid green ("Engine running").
+2. Open this project folder in your terminal / Antigravity IDE.
+
+
+---------------------------------------------------------------------
+STEP 1: START THE SERVICES (COPY & PASTE IN TERMINAL)
+---------------------------------------------------------------------
+
+To make sure Jenkins and the Web App are up and running, copy and run:
+
+    docker compose -f docker-compose.jenkins.yml up -d
+    docker compose -f docker-compose.dev.yml up -d
+
+(Note: If they are already running from today, this command will simply
+say "Running" in 1 second without disturbing anything.)
+
+
+---------------------------------------------------------------------
+STEP 2: VERIFY ALL CONTAINERS ARE HEALTHY
+---------------------------------------------------------------------
+
+Run:
+
+    docker ps
+
+You should see 4 active containers:
+- jenkins_server          (Port 0.0.0.0:8085->8080/tcp)
+- inventory_dev_nginx     (Port 0.0.0.0:8080->80/tcp)
+- inventory_dev_web       (Port 8000/tcp)
+- inventory_dev_db        (Postgres 16, Up and healthy)
+
+
+---------------------------------------------------------------------
+STEP 3: RUN THE UNIT TESTS TO PROVE TEST QUALITY TO EXAMINER
+---------------------------------------------------------------------
+
+Run:
+
+    docker exec inventory_dev_web python manage.py test
+
+Expected Output:
+    Found 9 test(s).
+    Creating test database for alias 'default'...
+    System check identified no issues (0 silenced).
+    .........
+    Ran 9 tests in 0.416s
+    OK
+
+
+---------------------------------------------------------------------
+STEP 4: PROVE SYSTEM HEALTH (LIVE DATABASE CONNECTION)
+---------------------------------------------------------------------
+
+Run:
+
+    curl.exe -i http://localhost:8080/health/
+
+Expected Output:
+    HTTP/1.1 200 OK
+    {"status": "healthy", "database": "connected", "service": "inventory_and_billing"}
+
+
+---------------------------------------------------------------------
+STEP 5: OPEN THESE 4 URLS IN YOUR BROWSER FOR THE PRESENTATION
+---------------------------------------------------------------------
+
+Tab 1: Jenkins CI/CD Dashboard
+  URL:      http://localhost:8085/
+  Username: admin
+  Password: admin123
+  WHAT TO SHOW:
+  - Click on "Inventory-CI-CD".
+  - Show the "Stage View" table with 5 green columns:
+    [Checkout] -> [Test] -> [Build] -> [Deploy] -> [Post-deploy]
+  - Point to Build #3 (Red): Explain that this was our deliberate test
+    failure demo where a broken test aborted the pipeline and prevented
+    bad code from deploying.
+  - Point to Build #7 / #8 (Green): Explain that these were triggered
+    automatically by SCM polling when we pushed code to GitHub.
+
+Tab 2: Products & Inventory Page
+  URL:      http://localhost:8080/products/
+  WHAT TO SHOW:
+  - The 3 summary statistics cards at the top: Total Products, Low Stock,
+    and Out of Stock.
+  - The stock badges (Green = In Stock, Amber = Low Stock, Red = Out of Stock).
+  - Click "Add New Product" to show creating a product with SKU and Price.
+
+Tab 3: Invoices & Zero-Touch Deployment Demo
+  URL:      http://localhost:8080/invoices/create/
+  WHAT TO SHOW:
+  - Point out the "Notes / Special Instructions" textarea field.
+  - Explain: "This field was not originally in the database. During our
+    Stage 8 demo, we added it to the Django model, generated a migration,
+    and pushed it to GitHub. Jenkins automatically ran the tests, built
+    the image, deployed the container, ran 'python manage.py migrate'
+    inside the container, and made this field live without any manual
+    server commands!"
+
+Tab 4: Health Check JSON Endpoint
+  URL:      http://localhost:8080/health/
+  WHAT TO SHOW:
+  - Explain that it actively runs "SELECT 1" on PostgreSQL to ensure the
+    database is connected.
+
+
+---------------------------------------------------------------------
+STEP 6: WHAT TO SAY (1-MINUTE ELEVATOR PITCH SCRIPT)
+---------------------------------------------------------------------
+Say this to your examiner:
+
+"Sir/Ma'am, this is an automated CI/CD pipeline built for a containerized
+Django Inventory and Billing system.
+
+The architecture consists of three microservices: Nginx as a reverse
+proxy, Gunicorn running Django on Python 3.12, and PostgreSQL with
+persistent volume storage.
+
+The entire deployment lifecycle is governed by Jenkins using Pipeline as
+Code in our Jenkinsfile. Whenever code is committed to GitHub, Jenkins
+automatically detects the change via SCM polling. It tests the code
+inside an isolated container, builds deterministic Docker images, deploys
+the containers using Docker Compose, applies database migrations, and
+verifies system health through a retry check on our /health/ endpoint.
+
+If any test fails, the pipeline halts immediately, guaranteeing that
+faulty code is never deployed to production."
+
+
+---------------------------------------------------------------------
+STEP 7: HOW TO STOP CONTAINERS WHEN YOU ARE DONE WITH THE EXAM
+---------------------------------------------------------------------
+
+To stop all containers cleanly and free up computer memory:
+
+    docker compose -f docker-compose.dev.yml down
+    docker compose -f docker-compose.prod.yml down
+    docker compose -f docker-compose.jenkins.yml down
+
+(All your data, database records, and Jenkins jobs are saved permanently
+in Docker volumes, so nothing will be lost.)

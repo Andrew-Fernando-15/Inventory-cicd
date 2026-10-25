@@ -1,0 +1,206 @@
+=====================================================================
+DEVOPS FINAL PROJECT: COMPLETE ARCHITECTURE & CODE EXPLANATION GUIDE
+=====================================================================
+
+PROJECT TITLE:
+Automated End-to-End CI/CD Pipeline for a Containerized Django
+Inventory and Billing System using Jenkins, Docker, and Nginx.
+
+GITHUB REPOSITORY:
+https://github.com/Andrew-Fernando-15/Inventory-cicd.git (branch: main)
+
+---------------------------------------------------------------------
+1. WHAT IS THIS PROJECT? (EXECUTIVE SUMMARY)
+---------------------------------------------------------------------
+This project is an automated software delivery pipeline that takes
+code from a developer's machine all the way to a running multi-container
+web application without any manual deployment commands.
+
+It has two main components:
+1. The Application: A Django web application for inventory management
+   (products, stock tracking) and billing (invoices, stock deduction).
+2. The DevOps Infrastructure: A declarative 5-stage Jenkins CI/CD pipeline
+   orchestrated with Docker and Docker Compose, running Nginx as a reverse
+   proxy, Gunicorn as the WSGI server, and PostgreSQL as the database.
+
+
+---------------------------------------------------------------------
+2. SYSTEM ARCHITECTURE (HOW IT WORKS TOGETHER)
+---------------------------------------------------------------------
+
+Data Flow Diagram:
+
+Developer (You)
+    |
+    v (git push origin main)
+GitHub Repository (andrew-fernando-15/Inventory-cicd)
+    |
+    v (SCM Polling every 60 seconds)
+Jenkins CI/CD Automation Server (Port 8085)
+    |
+    +---> Stage 1: Checkout   -> Pulls latest code
+    +---> Stage 2: Test       -> Runs 9 unit tests in an isolated container
+    +---> Stage 3: Build      -> Builds Django (Gunicorn) and Nginx images
+    +---> Stage 4: Deploy     -> Runs 'docker compose up -d' (dev or prod)
+    +---> Stage 5: Post-deploy-> Runs database migrations inside container
+                                 and polls /health/ endpoint up to 15 times
+    |
+    v (Running Application on Host)
+Host Port 8080 (Dev) / Port 80 (Prod)
+    |
+    v
+[Nginx Reverse Proxy] (Port 80)
+    |
+    +---> Serves static CSS/JS directly from shared volume
+    +---> Forwards dynamic web requests (/, /products/, /invoices/)
+          to [Django + Gunicorn WSGI] (Port 8000)
+              |
+              +---> Connects to [PostgreSQL Database] (Port 5432)
+                    with persistent named Docker volume
+
+
+---------------------------------------------------------------------
+3. WHERE IS EVERYTHING? (DIRECTORY & FILE MAP)
+---------------------------------------------------------------------
+
+Folder: / (Root Workspace)
+- Dockerfile
+    Builds the production Django web container using python:3.12-slim.
+    Installs Python dependencies and runs Gunicorn on port 8000.
+- Jenkinsfile
+    The pipeline definition written in Groovy. Contains all 5 pipeline
+    stages (Checkout, Test, Build, Deploy, Post-deploy) and the
+    ENVIRONMENT build parameter (dev vs prod).
+- docker-compose.dev.yml
+    Defines the Development stack: web (DEBUG=True), postgres db, and
+    nginx (mapped to host port 8080).
+- docker-compose.prod.yml
+    Defines the Production stack: web (DEBUG=False), postgres db, and
+    nginx (mapped to host port 80), with restart: always.
+- docker-compose.jenkins.yml
+    Runs the Jenkins container on port 8085. Crucially mounts
+    /var/run/docker.sock so Jenkins can control the host Docker daemon.
+- .env.dev and .env.prod
+    Environment variable files keeping passwords, database names,
+    and secret keys separated between environments.
+- deploy.sh and deploy.ps1
+    Automated deployment scripts that handle container launch, database
+    migrations, collectstatic, and /health/ polling.
+- manage.py
+    Django's standard management script for running tests and commands.
+- requirements.txt
+    Python packages: Django (>=5.0,<5.1), psycopg2-binary, and gunicorn.
+
+Folder: /inventory/ (The Core Business Logic)
+- models.py
+    Defines the database tables:
+    - Product: SKU, name, price, stock quantity.
+    - Invoice: invoice number, customer name, date, total, and notes.
+    - InvoiceItem: links invoice to product, auto-deducts stock.
+- views.py
+    Contains the web page controllers:
+    - product_list, product_create, product_update: Product management.
+    - invoice_list, invoice_create, invoice_detail: Billing logic.
+    - health_check: Returns JSON {"status": "healthy", "database": "connected"}
+      by actively running "SELECT 1" on PostgreSQL.
+- forms.py
+    Django HTML forms: ProductForm, InvoiceForm, InvoiceItemFormSet.
+- urls.py
+    Web routing paths for products, invoices, and health check.
+- tests.py
+    9 automated unit tests verifying models, stock deduction rules,
+    invoicing, and the health check endpoint.
+- migrations/
+    - 0001_initial.py: Base database schema.
+    - 0002_invoice_notes.py: Migration created during the live demo that
+      added the 'notes' field to the Invoice model.
+- static/inventory/style.css
+    Custom plain CSS stylesheet using CSS variables (#2563EB primary,
+    #16A34A success, #F59E0B warning, #DC2626 danger). Provides summary
+    cards, colored stock badges, and semantic buttons with 0 emojis.
+- templates/inventory/
+    HTML templates: base.html, product_list.html, product_form.html,
+    invoice_list.html, invoice_create.html, invoice_detail.html.
+
+Folder: /jenkins-runner/ (Custom Jenkins Image)
+- Dockerfile
+    Extends official jenkins/jenkins:lts by installing Docker CLI,
+    Docker Compose plugin, Git, and Jenkins pipeline plugins.
+- security.groovy
+    Automated initialization script that configures the admin user
+    (admin / admin123) and disables the initial setup wizard.
+
+Folder: /nginx/ (Reverse Proxy)
+- Dockerfile
+    Builds the Nginx Alpine container.
+- default.conf
+    Directs /static/ requests directly to the static volume and
+    reverse-proxies all other HTTP requests to web:8000.
+
+
+---------------------------------------------------------------------
+4. HOW THE 5 PIPELINE STAGES WORK (JENKINSFILE)
+---------------------------------------------------------------------
+
+Stage 1: Checkout
+  - Jenkins pulls the latest source code from GitHub (branch 'main').
+  - Triggered automatically via SCM polling (checks GitHub every minute).
+
+Stage 2: Test
+  - Runs "python manage.py test" inside an isolated container.
+  - Tests models, stock validation, and health checks.
+  - FAILURE PROTECTION: If any test fails, Jenkins immediately marks
+    the build FAILED and STOPS. Build, Deploy, and Post-deploy are
+    never executed, protecting production from bugs.
+
+Stage 3: Build
+  - Runs "docker compose build" to produce fresh Docker images for both
+    the Django web app and the Nginx reverse proxy.
+
+Stage 4: Deploy
+  - Runs "docker compose -f <compose_file> up -d" using the selected
+    ENVIRONMENT parameter (dev on port 8080 or prod on port 80).
+  - Existing containers are seamlessly recreated with the new images.
+
+Stage 5: Post-deploy
+  - Runs "manage.py migrate --noinput" inside the web container to apply
+    any new database schema changes automatically.
+  - Runs a 15-attempt retry loop against http://localhost:PORT/health/
+    until HTTP 200 is confirmed.
+
+
+---------------------------------------------------------------------
+5. KEY VIVA QUESTIONS & EXACT ANSWERS
+---------------------------------------------------------------------
+
+Q1: Why do you have Nginx in front of Django/Gunicorn?
+A1: Gunicorn is an application server meant to run Python code. It is
+    not optimized for serving static files or handling slow internet
+    connections. Nginx serves CSS/JS directly from disk with zero Python
+    overhead, buffers slow clients, and acts as a security shield.
+
+Q2: How does Jenkins run Docker commands if Jenkins is inside a container?
+A2: We use Docker-outside-of-Docker (DooD) by mounting the host socket:
+    /var/run/docker.sock:/var/run/docker.sock. The Jenkins container has
+    the Docker CLI installed, which communicates through the socket
+    directly to the Windows host Docker daemon.
+
+Q3: Why did you use SCM Polling instead of GitHub Webhooks?
+A3: Webhooks require GitHub to send an inbound HTTP POST request to Jenkins.
+    Because our Jenkins runs locally behind a private Wi-Fi router / NAT,
+    GitHub cannot reach localhost:8085 without third-party tunneling.
+    SCM Polling (pollSCM '* * * * *') makes Jenkins poll outbound to GitHub
+    every 60 seconds, which works reliably in any local private network.
+
+Q4: What was the live demo that proved zero-touch deployment?
+A4: We added a new 'notes' field to the Invoice model in models.py,
+    generated migration 0002_invoice_notes.py, and pushed to GitHub.
+    Jenkins automatically detected the commit, ran tests, built the
+    image, deployed the container, ran the migration inside the live
+    database, and verified health. The notes textarea was immediately
+    live on the web form with no manual commands.
+
+Q5: What does your health check do?
+A5: It does not return a fake string. It runs a live SQL query
+    (SELECT 1) on PostgreSQL. If the database is disconnected or down,
+    it returns HTTP 503 error, alerting the pipeline immediately.
