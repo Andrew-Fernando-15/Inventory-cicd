@@ -16,10 +16,6 @@ class HealthCheckTests(TestCase):
         self.assertEqual(data.get('status'), 'healthy')
         self.assertEqual(data.get('database'), 'connected')
 
-    def test_deliberate_failure_for_pipeline_check(self):
-        """Deliberate failure to verify pipeline halts before Build and Deploy."""
-        self.assertEqual("pipeline_test", "deliberate_failure_expected")
-
 
 class ProductModelTests(TestCase):
     def setUp(self):
