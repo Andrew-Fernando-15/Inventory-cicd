@@ -44,29 +44,29 @@ This project was developed for the DevOps Final Practical Examination. It demons
 
 ```mermaid
 graph TD
-    Dev[Developer] -->|git push| GH[GitHub Repository]
-    GH -->|SCM Poll 1m| Jenk[Jenkins Automation Server]
+    Dev["Developer"] -->|"git push"| GH["GitHub Repository"]
+    GH -->|"SCM Poll (1 min)"| Jenk["Jenkins Automation Server"]
     
-    subgraph Jenkins Pipeline Execution
-        J1[Stage 1: Checkout] --> J2[Stage 2: Test Unit Tests]
-        J2 -->|Pass| J3[Stage 3: Docker Build]
-        J2 -->|Fail| Stop[Halt Pipeline - No Deploy]
-        J3 --> J4[Stage 4: Deploy Docker Compose]
-        J4 --> J5[Stage 5: Post-Deploy Migrations & Health Check]
+    subgraph Pipeline["Jenkins CI/CD Pipeline"]
+        J1["Stage 1: Checkout"] --> J2["Stage 2: Test Unit Tests"]
+        J2 -->|"Tests Pass"| J3["Stage 3: Docker Build"]
+        J2 -->|"Tests Fail"| Stop["Halt Pipeline (No Deploy)"]
+        J3 --> J4["Stage 4: Deploy Docker Compose"]
+        J4 --> J5["Stage 5: Post-Deploy Migrations & Health Check"]
     end
     
-    Jenk --> Jenkins Pipeline Execution
+    Jenk --> J1
     
-    subgraph Docker Runtime Environment
-        Nginx[Nginx Reverse Proxy: Port 80 / 8080] -->|Proxy Pass /| Web[Django + Gunicorn WSGI: Port 8000]
-        Nginx -->|Direct Serve /static/| VolStatic[(Static Volume)]
-        Web -->|ORM Read / Write| DB[(PostgreSQL 16 DB)]
-        DB -->|Persistent Storage| VolData[(Postgres Named Volume)]
+    subgraph Runtime["Docker Runtime Environment"]
+        Nginx["Nginx Reverse Proxy (Port 80 / 8080)"] -->|"proxy_pass"| Web["Django + Gunicorn WSGI (Port 8000)"]
+        Nginx -->|"direct serve"| VolStatic[("Static Volume")]
+        Web -->|"read/write"| DB[("PostgreSQL 16 DB")]
+        DB -->|"persistent storage"| VolData[("Postgres Named Volume")]
     end
     
-    J4 -->|docker compose up -d| Docker Runtime Environment
-    J5 -->|docker compose exec web python manage.py migrate| Web
-    J5 -->|curl http://localhost:PORT/health/| Nginx
+    J4 -->|"docker compose up -d"| Web
+    J5 -->|"manage.py migrate"| Web
+    J5 -->|"curl /health/"| Nginx
 ```
 
 ### Text Flow Diagram
